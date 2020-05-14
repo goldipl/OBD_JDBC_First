@@ -17,7 +17,8 @@ Java DataBase Connectivity Application
 
 ## Version
 04.05.2020 - **`ver. 1.0`**  
-08.05.2020 - **`ver. 1.1`**  
+08.05.2020 - **`ver. 1.1`** 
+14.05.2020 - **`ver. 1.2`**  
 	
 ## Technologies
 Project was created with:
