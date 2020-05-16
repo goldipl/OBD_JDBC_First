@@ -15,6 +15,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class OBD_jdbc_A {
@@ -115,8 +116,7 @@ public class OBD_jdbc_A {
 					"  exception when eAlreadyExists then \r\n" + 
 					"      null; \r\n" + 
 					"end;";
-				
-							
+			
 			Connection polaczenie = DriverManager.getConnection(Namiary.url, Namiary.uzytkownik, Namiary.haslo);
 			System.out.println("AutoCommit: " + polaczenie.getAutoCommit());
 			Statement polecenie = polaczenie.createStatement();
@@ -125,27 +125,15 @@ public class OBD_jdbc_A {
 			System.out.println("execute: " + polecenie.executeUpdate(sql3));
 			System.out.println("execute: " + polecenie.executeUpdate(sql4));
 			System.out.println("execute: " + polecenie.executeUpdate(sql5));
-			polecenie.close();
 			
-		} catch (SQLException e) {
-			
-			System.out.println("B³¹d programu!");
-			e.printStackTrace();
-			return;
-		}
-		
-			try {
-					
-				// Wprowadzanie danych / ocenianie z klawiatury
-				// Program sprawdza, czy dane faktycznie znajduja sie w bazie danych
-				// Inaczej uniemozliwa ocenianie
+			// Wprowadzanie danych / ocenianie z klawiatury
+			// Program sprawdza, czy dane faktycznie znajduja sie w bazie danych
+			// Inaczej uniemozliwa ocenianie
 					   
-				String sql = "INSERT INTO ocenianie(idu, ido, idp, idn, rodzaj_oceny) VALUES (?, ?, ?, ?, ?)";
-				        
-				Connection polaczenie = DriverManager.getConnection(Namiary.url, Namiary.uzytkownik, Namiary.haslo);
-				Statement polecenie = polaczenie.createStatement();
+			String sql = "INSERT INTO ocenianie(idu, ido, idp, idn, rodzaj_oceny) VALUES (?, ?, ?, ?, ?)";
 						
-				while (true) {
+			while (true) {
+					System.out.println("");
 					System.out.println("||||||||||||O-C-E-N-I-A-N-I-E|||||||||||||");
 					System.out.println("Wprowadzenie nowej oceny. Wcisnij - 'ENTER'");
 					System.out.println("Zakonczenie oceniania.    Wcisnij - 'Q' nastepnie 'ENTER'");
@@ -154,6 +142,7 @@ public class OBD_jdbc_A {
 						
 					if (in.equals("q") || in.equals("Q")) {
 						System.out.println("Koniec dzialania programu");
+						scn.close();
 						polaczenie.close();
 						break;
 					}
@@ -167,6 +156,9 @@ public class OBD_jdbc_A {
 					} else {
 						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
 						System.out.println("Uruchom program ponownie!");
+						scn.close();
+						result1.close();
+						polaczenie.close();
 						break;
 					}
 				
@@ -179,6 +171,9 @@ public class OBD_jdbc_A {
 					} else {
 						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
 						System.out.println("Uruchom program ponownie!");
+						scn.close();
+						result2.close();
+						polaczenie.close();
 						break;
 					}	
 												
@@ -191,6 +186,9 @@ public class OBD_jdbc_A {
 					} else {
 						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
 						System.out.println("Uruchom program ponownie!");
+						scn.close();
+						result3.close();
+						polaczenie.close();
 						break;
 					}
 
@@ -203,14 +201,17 @@ public class OBD_jdbc_A {
 					} else {
 						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
 						System.out.println("Uruchom program ponownie!");
+						scn.close();
+						result4.close();
+						polaczenie.close();
 						break;
 					}							
 
 					System.out.println("wprowadz rodzaj oceny: 'S' - semestralna, 'C' - czastkowa");
 					while (!scn.hasNext("[SC]")) {
-					    System.out.println("Niepoprawne dane! Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa --- WIELKIMI LITERAMI! ---");
+					    System.out.println("Niepoprawne dane! Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
 					    scn.next();
-					}
+					} 
 								
 				char rodzaj_oceny = scn.next().charAt(0); 
 						        
@@ -223,14 +224,24 @@ public class OBD_jdbc_A {
 				System.out.println("execute: " + polecenie2.executeUpdate());
 				polecenie2.close();
 
-				}
+			}
+			polecenie.close();
+			scn.close();
+
 							
-			} catch (SQLException e) {
+		} catch (SQLException e) {
 				
-				System.out.println("B³¹d programu!");
-				e.printStackTrace();
-	
-			}		
-	
+			System.out.println("Blad programu!");
+			e.printStackTrace();
+			return;
+		
+		} catch (InputMismatchException e) {
+			
+			System.out.println("Blad programu!");
+            System.out.println("Podales/as litery zamiast cyfer!");
+            System.out.println("Uruchom program ponownie!");
+
+		}		
+		
 	}
 }
