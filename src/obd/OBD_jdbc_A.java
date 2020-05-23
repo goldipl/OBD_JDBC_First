@@ -12,7 +12,6 @@ package obd;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.InputMismatchException;
@@ -24,7 +23,7 @@ public class OBD_jdbc_A {
 		static String url = "******@******";
 		static String uzytkownik = "******";
 		static String haslo		 = "******";
-	}
+}
 	
 	public static void main(String[] args) {
 		
@@ -147,69 +146,42 @@ public class OBD_jdbc_A {
 						break;
 					}
 
-					System.out.println("Wprowadz ID ucznia");
+					System.out.println("Wprowadz kolejno ID ucznia, oceny, przedmiotu, nauczyciela");
 					int idu = scn.nextInt();
+					boolean isError = false;
+					String errorMsg = "";
 					String sql6 = "SELECT idu FROM uczen WHERE idu='" + idu + "'";
-					ResultSet result1 = polecenie.executeQuery(sql6);	
-					if (result1.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
-						System.out.println("Uruchom program ponownie!");
-						scn.close();
-						result1.close();
-						polaczenie.close();
-						break;
-					}
-				
-					System.out.println("wprowadz ID oceny");
 					int ido = scn.nextInt();	
 					String sql7 = "SELECT ido FROM ocena WHERE ido='" + ido + "'";
-					ResultSet result2 = polecenie.executeQuery(sql7);	
-					if (result2.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
-						System.out.println("Uruchom program ponownie!");
-						scn.close();
-						result2.close();
-						polaczenie.close();
-						break;
-					}	
-												
-					System.out.println("wprowadz ID przedmiotu");
 					int idp = scn.nextInt();	
 					String sql8 = "SELECT idp FROM przedmiot WHERE idp='" + idp + "'";
-					ResultSet result3 = polecenie.executeQuery(sql8);
-					if (result3.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
-						System.out.println("Uruchom program ponownie!");
-						scn.close();
-						result3.close();
-						polaczenie.close();
-						break;
-					}
-
-					System.out.println("wprowadz ID nauczyciela");
 					int idn = scn.nextInt();	
 					String sql9 = "SELECT idn FROM nauczyciel WHERE idn='" + idn + "'";
-					ResultSet result4 = polecenie.executeQuery(sql9);
-					if (result4.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! Sprawdz poprawnosc danych!");
-						System.out.println("Uruchom program ponownie!");
-						scn.close();
-						result4.close();
-						polaczenie.close();
-						break;
+//					ResultSet result1 = polecenie.executeQuery(sql6);	
+//					ResultSet result2 = polecenie.executeQuery(sql7);
+//					ResultSet result3 = polecenie.executeQuery(sql8);
+//					ResultSet result4 = polecenie.executeQuery(sql9);
+					if (polecenie.executeUpdate(sql6) !=1) {
+						isError = true;
+						errorMsg = "IDUFK";
+					} else if (polecenie.executeUpdate(sql7) !=1) {
+						isError = true;
+						errorMsg = "IDOFK";
+					} else if (polecenie.executeUpdate(sql8) !=1) {
+						isError = true;
+						errorMsg = "IDPFK";
+					} else if (polecenie.executeUpdate(sql9) !=1) {
+						isError = true;
+						errorMsg = "IDNFK";
+					} if (isError){
+						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS." + errorMsg +") - nie znaleziono klucza nadrzêdnego");
+						return;
 					}							
 
 					System.out.println("wprowadz rodzaj oceny: 'S' - semestralna, 'C' - czastkowa");
 					while (!scn.hasNext("[SC]")) {
-					    System.out.println("Niepoprawne dane! Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
+						System.out.println("Niepoprawne dane!");
+					    System.out.println("Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
 					    scn.next();
 					} 
 								
