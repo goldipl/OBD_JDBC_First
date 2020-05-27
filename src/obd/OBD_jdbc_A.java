@@ -12,6 +12,7 @@ package obd;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.InputMismatchException;
@@ -23,9 +24,9 @@ public class OBD_jdbc_A {
 		static String url = "******@******";
 		static String uzytkownik = "******";
 		static String haslo		 = "******";
-}
+	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws NullPointerException {
 		
 		Scanner scn;
 		String nazwaSterownika = "oracle.jdbc.driver.OracleDriver";
@@ -36,14 +37,6 @@ public class OBD_jdbc_A {
 			System.out.println("Pakiet     : " + c.getPackage());
 			System.out.println("Nazwa klasy: " + c.getName());
 		
-		} catch (Exception e) {
-			// Sterownik nieodnaleziony
-			System.out.println("Exception: " + e.getMessage());
-			e.printStackTrace();
-			return;
-		}
-				
-		try {
 			
 			//Definicja wyjatku ORA-00955 “nazwa jest obecnie uzywana przez istniejacy obiekt”
 			
@@ -128,9 +121,26 @@ public class OBD_jdbc_A {
 			// Wprowadzanie danych / ocenianie z klawiatury
 			// Program sprawdza, czy dane faktycznie znajduja sie w bazie danych
 			// Inaczej uniemozliwa ocenianie
-					   
+			
+			int idn = 0;
+			int idu = 0;
+			int ido = 0;
+			int idp = 0;
+			
+			String sql6;
+			String sql7;
+			String sql8;
+			String sql9;
+			
+			ResultSet result1 = null;	
+			ResultSet result2 = null;
+			ResultSet result3 = null;
+			ResultSet result4 = null;
+			
 			String sql = "INSERT INTO ocenianie(idu, ido, idp, idn, rodzaj_oceny) VALUES (?, ?, ?, ?, ?)";
-						
+			
+			PreparedStatement polecenie2;
+
 			while (true) {
 					System.out.println("");
 					System.out.println("||||||||||||O-C-E-N-I-A-N-I-E|||||||||||||");
@@ -142,78 +152,110 @@ public class OBD_jdbc_A {
 					if (in.equals("q") || in.equals("Q")) {
 						System.out.println("Koniec dzialania programu");
 						scn.close();
+						polecenie.close();
 						polaczenie.close();
 						break;
 					}
 
-					System.out.println("Wprowadz kolejno ID ucznia, oceny, przedmiotu, nauczyciela");
-					int idu = scn.nextInt();
-					boolean isError = false;
-					String errorMsg = "";
-					String sql6 = "SELECT idu FROM uczen WHERE idu='" + idu + "'";
-					int ido = scn.nextInt();	
-					String sql7 = "SELECT ido FROM ocena WHERE ido='" + ido + "'";
-					int idp = scn.nextInt();	
-					String sql8 = "SELECT idp FROM przedmiot WHERE idp='" + idp + "'";
-					int idn = scn.nextInt();	
-					String sql9 = "SELECT idn FROM nauczyciel WHERE idn='" + idn + "'";
-//					ResultSet result1 = polecenie.executeQuery(sql6);	
-//					ResultSet result2 = polecenie.executeQuery(sql7);
-//					ResultSet result3 = polecenie.executeQuery(sql8);
-//					ResultSet result4 = polecenie.executeQuery(sql9);
-					if (polecenie.executeUpdate(sql6) !=1) {
-						isError = true;
-						errorMsg = "IDUFK";
-					} else if (polecenie.executeUpdate(sql7) !=1) {
-						isError = true;
-						errorMsg = "IDOFK";
-					} else if (polecenie.executeUpdate(sql8) !=1) {
-						isError = true;
-						errorMsg = "IDPFK";
-					} else if (polecenie.executeUpdate(sql9) !=1) {
-						isError = true;
-						errorMsg = "IDNFK";
-					} if (isError){
-						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS." + errorMsg +") - nie znaleziono klucza nadrzêdnego");
-						return;
+					System.out.println("Wprowadz ID ucznia");
+					idu = scn.nextInt();
+					sql6 = "SELECT idu FROM uczen WHERE idu='" + idu + "'";
+					result1 = polecenie.executeQuery(sql6);
+					if (result1.next()) {
+						System.out.println("Jest w bazie. Kolejno");
+					} else {
+						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDUFK) - nie znaleziono klucza nadrzêdnego");
+						continue;
+					}
+				
+					System.out.println("wprowadz ID oceny");
+					ido = scn.nextInt();	
+					sql7 = "SELECT ido FROM ocena WHERE ido='" + ido + "'";
+					result2 = polecenie.executeQuery(sql7);	
+					if (result2.next()) {
+						System.out.println("Jest w bazie. Kolejno");
+					} else {
+						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDOFK) - nie znaleziono klucza nadrzêdnego");
+						continue;
+					}	
+												
+					System.out.println("wprowadz ID przedmiotu");
+					idp = scn.nextInt();	
+					sql8 = "SELECT idp FROM przedmiot WHERE idp='" + idp + "'";
+					result3 = polecenie.executeQuery(sql8);
+					if (result3.next()) {
+						System.out.println("Jest w bazie. Kolejno");
+					} else {
+						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDPFK) - nie znaleziono klucza nadrzêdnego");
+						continue;
+					}
+
+					System.out.println("wprowadz ID nauczyciela");
+					idn = scn.nextInt();	
+					sql9 = "SELECT idn FROM nauczyciel WHERE idn='" + idn + "'";
+					result4 = polecenie.executeQuery(sql9);
+					if (result4.next()) {
+						System.out.println("Jest w bazie. Kolejno");
+					} else {
+						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDNFK) - nie znaleziono klucza nadrzêdnego");
+						continue;
 					}							
 
 					System.out.println("wprowadz rodzaj oceny: 'S' - semestralna, 'C' - czastkowa");
 					while (!scn.hasNext("[SC]")) {
-						System.out.println("Niepoprawne dane!");
-					    System.out.println("Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
+					    System.out.println("Niepoprawne dane! Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
 					    scn.next();
 					} 
 								
-				char rodzaj_oceny = scn.next().charAt(0); 
-						        
-				PreparedStatement polecenie2 = polaczenie.prepareStatement(sql);
+				char rodzaj_oceny = scn.next().charAt(0); 	        
+				polecenie2 = polaczenie.prepareStatement(sql);
 				polecenie2.setInt(1, idu);
 				polecenie2.setInt(2, ido);
 				polecenie2.setInt(3, idp);
 				polecenie2.setInt(4, idn);
 				polecenie2.setString(5, (Character.toString(rodzaj_oceny)));
 				System.out.println("execute: " + polecenie2.executeUpdate());
-				polecenie2.close();
 
+				polecenie2.close();
+				
 			}
+			
+			polaczenie.close();
 			polecenie.close();
 			scn.close();
-
-							
+				
+		    if (result1 != null) {
+		    	result1.close();
+		    }
+		    if (result2 != null) {
+		    	result2.close();
+		    }
+		    if (result3 != null) {
+		    	result3.close();
+		    }
+		    if (result4 != null) {
+		    	result4.close();
+		    }
+		    
 		} catch (SQLException e) {
 				
-			System.out.println("Blad programu!");
+			System.out.println("Blad programu! Komunikat b³êdu:");
 			e.printStackTrace();
 			return;
 		
 		} catch (InputMismatchException e) {
 			
-			System.out.println("Blad programu!");
-            System.out.println("Podales/as litery zamiast cyfer!");
-            System.out.println("Uruchom program ponownie!");
-
-		}		
+			System.out.println("Blad programu! Wpisa³eœ/aœ litery zamiast cyfer. Komunikat b³êdu:");
+			e.printStackTrace();
+			return;
+					
+		} catch (Exception e) {
+			// Sterownik nieodnaleziony
+			System.out.println("Exception: " + e.getMessage());
+			e.printStackTrace();
+			return;
+			
+		}
 		
 	}
 }
