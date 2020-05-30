@@ -1,50 +1,147 @@
 package obd;
 
-/* 
- * PROGRAM:
- *  - TWORZACY BAZE DANYCH
- *  - UZUPELNIAJACY TABELE nauczyciel, uczen, przedmiot, ocena
- *  - UZUPELNIAJACY TABELE ocenianie Z POZIOMU KONSOLI IDE
- *  - POSIADA ZABEZPIECZENIE PRZED DUPLIKACJA TABELI I DANYCH
- *    PO PONOWNYM URUCHOMIENIU
- */
-
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLRecoverableException;
+import java.sql.SQLSyntaxErrorException;
 import java.sql.Statement;
-import java.util.InputMismatchException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class OBD_jdbc_A {
 
-	static class Namiary {
-		static String url = "******@******";
-		static String uzytkownik = "******";
-		static String haslo		 = "******";
-	}
-	
-	public static void main(String[] args) throws NullPointerException {
-		
-		Scanner scn;
-		String nazwaSterownika = "oracle.jdbc.driver.OracleDriver";
-		
-		try {
-			// Laduj sterownik JDBC
-			Class<?> c = Class.forName(nazwaSterownika);
+    static String url = "******@******";
+    static String uzytkownik ="******";
+    static String haslo = "******";
+    static Connection polaczenie;
+    static Statement polecenie;
+    static Scanner scn;
+
+    public static void main(String[] args) {
+       
+        try {
+            polaczzBazaDanych();
+            stworzTabelezDanymi();
+            uruchomProgram();
+            zamknijPolaczenie();
+        }
+        catch(Exception e) {
+            System.out.println("Blad. Program nie dziala. Sprawdz polaczenie internetowe.");
+        }
+
+    }
+
+    static void uruchomProgram() throws Exception {
+        scn = new Scanner(System.in);
+        String kontynuuj;
+        List<String> ocenianie;
+        do {
+            ocenianie = rozpocznijOcenianie();
+            dodajOceny(ocenianie);
+            do {
+                System.out.println("Czy chcesz dodac kolejny rekord? Wcisnij 'T' jak tak lub 'N' jak nie.");
+                kontynuuj = scn.nextLine();
+                if(!kontynuuj.equals("N") && !kontynuuj.equals("T"))
+                    System.out.println("Podales/as niepoprawna wartosc. Podaj jeszcze raz WIELKIMI LITERAMI!");
+            }
+            while(!kontynuuj.equals("N") && !kontynuuj.equals("T"));
+        }
+        while(kontynuuj.equals("T"));
+        System.out.println("Koniec dzialania programu");
+    }
+
+    static List<String> rozpocznijOcenianie() {
+        List<String> ocena = new ArrayList<>();
+        String rodzajOceny;
+        boolean jestOK;
+        System.out.println("");
+		System.out.println("||||||||||||O-C-E-N-I-A-N-I-E|||||||||||||");
+        do {
+            System.out.println("wprowadz rodzaj oceny: 'S' - semestralna, 'C' - czastkowa");
+            rodzajOceny = scn.nextLine();
+            jestOK = rodzajOceny.equals("S") || rodzajOceny.equals("C");
+            if(!jestOK) {
+                System.out.println("Blad! Niepoprawne dane! Rodzaj oceny powinien byc wprowadzony WIELKIMI LITERAMI!");
+                rozpocznijOcenianie();
+            }
+        } while(!jestOK);
+
+
+        ocena.add(rodzajOceny);
+
+        sprawdzID(ocena, "ucznia: ");
+        sprawdzID(ocena, "oceny: ");
+        sprawdzID(ocena, "przedmiotu: ");
+        sprawdzID(ocena, "nauczyciela: ");
+
+        return ocena;
+    }
+
+    static void sprawdzID(List<String> ocena, String nazwaTabeli) {
+        String id;
+        boolean jestOK;
+        
+        do {
+            jestOK = true;
+            System.out.println("Podaj id " + nazwaTabeli);
+            id = scn.nextLine();
+            try {
+                Integer.parseInt(id);
+            }
+            catch (NumberFormatException e) {
+                System.out.println("SQL Error: ORA-00984: w tym miejscu, kolumna jest niedozwolona");
+                rozpocznijOcenianie();
+            }
+        }
+        while(!jestOK);
+        ocena.add(id);
+    }
+
+
+    
+    static void polaczzBazaDanych() throws Exception {
+    	String nazwaSterownika = "oracle.jdbc.driver.OracleDriver";  	
+        try {
+        	Class<?> c = Class.forName(nazwaSterownika);
 			System.out.println("Pakiet     : " + c.getPackage());
 			System.out.println("Nazwa klasy: " + c.getName());
-		
-			
-			//Definicja wyjatku ORA-00955 “nazwa jest obecnie uzywana przez istniejacy obiekt”
-			
-			String sql1 = "declare\r\n" + 
+            polaczenie = DriverManager.getConnection(url, uzytkownik, haslo);
+            System.out.println("AutoCommit: " + polaczenie.getAutoCommit());
+            polecenie = polaczenie.createStatement();
+        }
+        catch (ClassNotFoundException e) {
+            System.out.println("Brak sterownika JDBC");
+            throw new Exception("");
+        }
+        catch(SQLException e) {
+            System.out.println("Nieudane polaczenie z baza danych");
+            throw new Exception("");
+        }
+        catch(Exception e) {
+            throw new Exception("");
+        }
+        System.out.println("Polaczenie z baza danych: OK");
+    }
+
+    static void stworzTabelezDanymi() throws Exception {
+        try {
+            String sql1 = "declare\r\n" + 
 					"  eAlreadyExists exception;\r\n" + 
 					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
 					"begin\r\n" + 
-					"  execute immediate 'CREATE TABLE nauczyciel(idn integer not null, nazwisko_nauczyciela char(30) not null, imie_nauczyciela char(20) not null)'; \r\n" + 
+					"  execute immediate 'CREATE TABLE ocenianie(rodzaj_oceny char(1) not null, idu integer not null, "
+					+ "ido integer not null, idp integer not null, idn integer not null)'; \r\n" + 
+					"  exception when eAlreadyExists then \r\n" + 
+					"      null; \r\n" + 
+					"end;";
+            String sql2 = "declare\r\n" + 
+					"  eAlreadyExists exception;\r\n" + 
+					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
+					"begin\r\n" + 
+					"  execute immediate 'CREATE TABLE nauczyciel(idn integer not null, nazwisko_nauczyciela char(30) not null, "
+					+ "imie_nauczyciela char(20) not null)'; \r\n" + 
 					"  execute immediate 'INSERT INTO nauczyciel VALUES (1, ''MARKOWSKI'', ''KRZYSZTOF'')'; \r\n" +
 					"  execute immediate 'INSERT INTO nauczyciel VALUES (2, ''ADAMOWSKI'', ''DAMIAN'')'; \r\n" +
 					"  execute immediate 'INSERT INTO nauczyciel VALUES (3, ''WOLSKA'', ''ANNA'')'; \r\n" +
@@ -54,8 +151,7 @@ public class OBD_jdbc_A {
 					"  exception when eAlreadyExists then \r\n" + 
 					"      null; \r\n" + 
 					"end;";
-			
-			String sql2 = "declare\r\n" + 
+            String sql3 = "declare\r\n" + 
 					"  eAlreadyExists exception;\r\n" + 
 					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
 					"begin\r\n" + 
@@ -69,12 +165,12 @@ public class OBD_jdbc_A {
 					"  exception when eAlreadyExists then \r\n" + 
 					"      null; \r\n" + 
 					"end;";
-			
-			String sql3 = "declare\r\n" + 
+            String sql4 = "declare\r\n" + 
 					"  eAlreadyExists exception;\r\n" + 
 					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
 					"begin\r\n" + 
-					"  execute immediate 'CREATE TABLE ocena(ido integer not null, wartosc_opisowa char(20) not null, wartosc_numeryczna float not null)'; \r\n" + 
+					"  execute immediate 'CREATE TABLE ocena(ido integer not null, wartosc_opisowa char(20) not null, "
+					+ "wartosc_numeryczna float not null)'; \r\n" + 
 					"  execute immediate 'INSERT INTO ocena VALUES (1, ''ndop'', 2.0F)'; \r\n" +
 					"  execute immediate 'INSERT INTO ocena VALUES (2, ''dst'', 3.0F)'; \r\n" +
 					"  execute immediate 'INSERT INTO ocena VALUES (3, ''dstplus'', 3.5F)'; \r\n" +
@@ -84,12 +180,12 @@ public class OBD_jdbc_A {
 					"  exception when eAlreadyExists then \r\n" + 
 					"      null; \r\n" + 
 					"end;";
-			
-			String sql4 = "declare\r\n" + 
+            String sql5 = "declare\r\n" + 
 					"  eAlreadyExists exception;\r\n" + 
 					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
 					"begin\r\n" + 
-					"  execute immediate 'CREATE TABLE uczen(idu integer not null, nazwisko_ucznia char(30) not null, imie_ucznia char(20) not null)'; \r\n" + 
+					"  execute immediate 'CREATE TABLE uczen(idu integer not null, nazwisko_ucznia char(30) not null, "
+					+ "imie_ucznia char(20) not null)'; \r\n" + 
 					"  execute immediate 'INSERT INTO uczen VALUES (1, ''MICHALSKI'', ''KRZYSZTOF'')'; \r\n" +
 					"  execute immediate 'INSERT INTO uczen VALUES (2, ''WOLSKI'', ''DANIEL'')'; \r\n" +
 					"  execute immediate 'INSERT INTO uczen VALUES (3, ''KOWALSKA'', ''ANETA'')'; \r\n" +
@@ -99,163 +195,74 @@ public class OBD_jdbc_A {
 					"  exception when eAlreadyExists then \r\n" + 
 					"      null; \r\n" + 
 					"end;";
-			
-			String sql5 = "declare\r\n" + 
-					"  eAlreadyExists exception;\r\n" + 
-					"  pragma exception_init(eAlreadyExists, -00955);\r\n" + 
-					"begin\r\n" + 
-					"  execute immediate 'CREATE TABLE ocenianie(idu integer not null, ido integer not null, idp integer not null, idn integer not null, rodzaj_oceny char(1) not null)'; \r\n" + 
-					"  exception when eAlreadyExists then \r\n" + 
-					"      null; \r\n" + 
-					"end;";
-			
-			Connection polaczenie = DriverManager.getConnection(Namiary.url, Namiary.uzytkownik, Namiary.haslo);
-			System.out.println("AutoCommit: " + polaczenie.getAutoCommit());
-			Statement polecenie = polaczenie.createStatement();
-			System.out.println("execute: " + polecenie.executeUpdate(sql1));
+         
+            System.out.println("execute: " + polecenie.executeUpdate(sql1));
 			System.out.println("execute: " + polecenie.executeUpdate(sql2));
 			System.out.println("execute: " + polecenie.executeUpdate(sql3));
 			System.out.println("execute: " + polecenie.executeUpdate(sql4));
 			System.out.println("execute: " + polecenie.executeUpdate(sql5));
-			
-			// Wprowadzanie danych / ocenianie z klawiatury
-			// Program sprawdza, czy dane faktycznie znajduja sie w bazie danych
-			// Inaczej uniemozliwa ocenianie
-			
-			int idn = 0;
-			int idu = 0;
-			int ido = 0;
-			int idp = 0;
-			
-			String sql6;
-			String sql7;
-			String sql8;
-			String sql9;
-			
-			ResultSet result1 = null;	
-			ResultSet result2 = null;
-			ResultSet result3 = null;
-			ResultSet result4 = null;
-			
-			String sql = "INSERT INTO ocenianie(idu, ido, idp, idn, rodzaj_oceny) VALUES (?, ?, ?, ?, ?)";
-			
-			PreparedStatement polecenie2;
+        }
+        catch(SQLException e) {
+            System.out.println("Nie udalo sie stworzyc tabel bazy danych");
+            throw new Exception();
+        }
 
-			while (true) {
-					System.out.println("");
-					System.out.println("||||||||||||O-C-E-N-I-A-N-I-E|||||||||||||");
-					System.out.println("Wprowadzenie nowej oceny. Wcisnij - 'ENTER'");
-					System.out.println("Zakonczenie oceniania.    Wcisnij - 'Q' nastepnie 'ENTER'");
-					scn = new Scanner(System.in);
-					String in = scn.nextLine();
-						
-					if (in.equals("q") || in.equals("Q")) {
-						System.out.println("Koniec dzialania programu");
-						scn.close();
-						polecenie.close();
-						polaczenie.close();
-						break;
-					}
+    }
 
-					System.out.println("Wprowadz ID ucznia");
-					idu = scn.nextInt();
-					sql6 = "SELECT idu FROM uczen WHERE idu='" + idu + "'";
-					result1 = polecenie.executeQuery(sql6);
-					if (result1.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDUFK) - nie znaleziono klucza nadrzêdnego");
-						continue;
-					}
-				
-					System.out.println("wprowadz ID oceny");
-					ido = scn.nextInt();	
-					sql7 = "SELECT ido FROM ocena WHERE ido='" + ido + "'";
-					result2 = polecenie.executeQuery(sql7);	
-					if (result2.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDOFK) - nie znaleziono klucza nadrzêdnego");
-						continue;
-					}	
-												
-					System.out.println("wprowadz ID przedmiotu");
-					idp = scn.nextInt();	
-					sql8 = "SELECT idp FROM przedmiot WHERE idp='" + idp + "'";
-					result3 = polecenie.executeQuery(sql8);
-					if (result3.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDPFK) - nie znaleziono klucza nadrzêdnego");
-						continue;
-					}
+    static void zamknijPolaczenie() throws Exception{
+        try {
+            polaczenie.close();
+        }
+        catch(SQLException e) {
+            System.out.println("Nieudane zamkniecie polaczenia");
+            throw new Exception();
+        }
+        System.out.println("Polaczenie zakonczone");
+    }
 
-					System.out.println("wprowadz ID nauczyciela");
-					idn = scn.nextInt();	
-					sql9 = "SELECT idn FROM nauczyciel WHERE idn='" + idn + "'";
-					result4 = polecenie.executeQuery(sql9);
-					if (result4.next()) {
-						System.out.println("Jest w bazie. Kolejno");
-					} else {
-						System.out.println("Niepoprawne dane! ORA-02291: naruszono wiêzy spójnoœci (MGODLEWS.IDNFK) - nie znaleziono klucza nadrzêdnego");
-						continue;
-					}							
+	static void dodajOceny(List<String> ocena) throws Exception{
+    	
+        try {
+        	String result1 = String.format("SELECT idu FROM uczen WHERE idu=" + ocena.get(1));
+        	String result2 = String.format("SELECT ido FROM ocena WHERE ido=" + ocena.get(2));
+        	String result3 = String.format("SELECT idp FROM przedmiot WHERE idp=" + ocena.get(3));
+        	String result4 = String.format("SELECT idn FROM nauczyciel WHERE idn=" + ocena.get(4));
+            String errorMessage = "";
+            boolean isError = false;
+            
+            if(polecenie.executeUpdate(result4) != 1) {
+                isError = true;
+                errorMessage = "IDNFK";
+            }
+            
+            else if(polecenie.executeUpdate(result3) != 1) {
+                isError = true;
+                errorMessage = "IDPFK";
+            }
+            
+            else if(polecenie.executeUpdate(result2) != 1) {
+                isError = true;
+                errorMessage = "IDOFK";
+            }
+            
+            else if(polecenie.executeUpdate(result1) != 1) {
+                isError = true;
+                errorMessage = "IDUFK";
+            }
+            if(isError) {
+                System.out.println("ORA-02291: naruszono wiêzy spójnoœci"+" (MGODLEWS."+errorMessage+") - nie znaleziono klucza nadrzêdnego");
+                return;
+            }
+            polecenie.executeUpdate(String.format("insert into ocenianie (rodzaj_oceny, idu, ido, idp, idn) values ('%s', %s, %s, %s, %s)"
+          		  , ocena.get(0), ocena.get(1), ocena.get(2), ocena.get(3), ocena.get(4)));
+        }
+        catch(SQLRecoverableException | SQLSyntaxErrorException e) {
+            throw new Exception();
+        }
+        catch(SQLException e) {
+            System.out.println("Blad. Rekord niedodany.");
 
-					System.out.println("wprowadz rodzaj oceny: 'S' - semestralna, 'C' - czastkowa");
-					while (!scn.hasNext("[SC]")) {
-					    System.out.println("Niepoprawne dane! Wprowadz poprawny rodzaj oceny: 'S' - semestralna, 'C' - czastkowa. RODZAJ OCENY WIELKIMI LITERAMI!");
-					    scn.next();
-					} 
-								
-				char rodzaj_oceny = scn.next().charAt(0); 	        
-				polecenie2 = polaczenie.prepareStatement(sql);
-				polecenie2.setInt(1, idu);
-				polecenie2.setInt(2, ido);
-				polecenie2.setInt(3, idp);
-				polecenie2.setInt(4, idn);
-				polecenie2.setString(5, (Character.toString(rodzaj_oceny)));
-				System.out.println("execute: " + polecenie2.executeUpdate());
-
-				polecenie2.close();
-				
-			}
-			
-			polaczenie.close();
-			polecenie.close();
-			scn.close();
-				
-		    if (result1 != null) {
-		    	result1.close();
-		    }
-		    if (result2 != null) {
-		    	result2.close();
-		    }
-		    if (result3 != null) {
-		    	result3.close();
-		    }
-		    if (result4 != null) {
-		    	result4.close();
-		    }
-		    
-		} catch (SQLException e) {
-				
-			System.out.println("Blad programu! Komunikat b³êdu:");
-			e.printStackTrace();
-			return;
-		
-		} catch (InputMismatchException e) {
-			
-			System.out.println("Blad programu! Wpisa³eœ/aœ litery zamiast cyfer. Komunikat b³êdu:");
-			e.printStackTrace();
-			return;
-					
-		} catch (Exception e) {
-			// Sterownik nieodnaleziony
-			System.out.println("Exception: " + e.getMessage());
-			e.printStackTrace();
-			return;
-			
-		}
-		
-	}
+        }
+    } 
+      
 }
